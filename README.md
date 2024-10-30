@@ -1,3 +1,15 @@
+
+| Step                                                                 | Name  |
+|----------------------------------------------------------------------|-------|
+| 0. Download the data file                                         |   All    |
+| 1. Implement the TODOs in the preprocessing/postprocessing                                |   All    |
+| 1.1 Normalization                                |  Tudi    |
+| 1.2 Skull Stripping    | Tudi |
+| 1.3 Image Registration                               | Isabella   |
+| 1.4 Random Forest Fine-Tuning                              |       |
+| 1.5 Image PostProcessing                              |       |
+
+
 # Medical Image Analysis Laboratory
 
 Welcome to the medical image analysis laboratory (MIALab).
