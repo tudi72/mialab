@@ -3,9 +3,9 @@
 |----------------------------------------------------------------------|-------|
 | 0. Download the data file                                         |   All    |
 | 1. Implement the TODOs in the preprocessing/postprocessing                                |   All    |
-| 1.1 Normalization                                |  Tudi    |
-| 1.2 Skull Stripping    | Tudi |
-| 1.3 Image Registration                               | Isabella   |
+| 1.1 Normalization                                |      |
+| 1.2 Skull Stripping    |  |
+| 1.3 Image Registration                               |    |
 | 1.4 Random Forest Fine-Tuning                              |       |
 | 1.5 Image PostProcessing                              |       |
 
