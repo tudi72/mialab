@@ -7,7 +7,8 @@
 | 1.2 Skull Stripping    |  |
 | 1.3 Image Registration                               |    |
 | 1.4 Random Forest Fine-Tuning                              |       |
-| 1.5 Image PostProcessing                              |       |
+| 1.5 Metrics (HausDorff distance)                              |       |
+| 1.6 Image PostProcessing                              |       |
 
 
 # Medical Image Analysis Laboratory
