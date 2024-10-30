@@ -11,6 +11,7 @@ import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
 
+# TODO implement this class
 class ImagePostProcessing(pymia_fltr.Filter):
     """Represents a post-processing filter."""
 

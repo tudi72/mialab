@@ -7,7 +7,33 @@ import warnings
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
+# class created by Tudi for hypothesizing different normalization techniques
+class HistogramEqualization(pymia_fltr.Filter):
+    
+    def __init__(self):
+        """
+        Initializes a new instance of the HistogramNormalization class.
 
+        """
+        super().__init__()
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        pass 
+
+# class created by Tudi for hypothesizing different normalization techniques
+class ZScoreNormalization(pymia_fltr.Filter):
+    """
+    Represents a Z-score normalization filter
+    Data is normalized around the 
+    Z = (X - mu ) / sigma
+    """
+    def __init__(self):
+        super().__init__()
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        pass 
+
+# TODO implement this class 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
 
@@ -28,10 +54,16 @@ class ImageNormalization(pymia_fltr.Filter):
 
         img_arr = sitk.GetArrayFromImage(image)
 
-        # todo: normalize the image using numpy
-        warnings.warn('No normalization implemented. Returning unprocessed image.')
+        img_min = img_arr.min()
+        img_max = img_arr.max()
 
-        img_out = sitk.GetImageFromArray(img_arr)
+        if img_max > img_min:
+            normalized_arr = (img_arr - img_min) / (img_max - img_min)
+        else:
+            warnings.warn("Image has no intensity range (max == min). Returning unprocessed image.")
+            normalized_arr = img_arr    
+
+        img_out = sitk.GetImageFromArray(normalized_arr)
         img_out.CopyInformation(image)
 
         return img_out
@@ -45,7 +77,6 @@ class ImageNormalization(pymia_fltr.Filter):
         return 'ImageNormalization:\n' \
             .format(self=self)
 
-
 class SkullStrippingParameters(pymia_fltr.FilterParams):
     """Skull-stripping parameters."""
 
@@ -57,7 +88,7 @@ class SkullStrippingParameters(pymia_fltr.FilterParams):
         """
         self.img_mask = img_mask
 
-
+# TODO implement this class
 class SkullStripping(pymia_fltr.Filter):
     """Represents a skull-stripping filter."""
 
@@ -91,7 +122,6 @@ class SkullStripping(pymia_fltr.Filter):
         return 'SkullStripping:\n' \
             .format(self=self)
 
-
 class ImageRegistrationParameters(pymia_fltr.FilterParams):
     """Image registration parameters."""
 
@@ -107,7 +137,7 @@ class ImageRegistrationParameters(pymia_fltr.FilterParams):
         self.transformation = transformation
         self.is_ground_truth = is_ground_truth
 
-
+# TODO implement this class
 class ImageRegistration(pymia_fltr.Filter):
     """Represents a registration filter."""
 
