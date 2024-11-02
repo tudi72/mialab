@@ -2,7 +2,6 @@
 import enum
 import os
 import typing as t
-import warnings
 
 import numpy as np
 import pymia.data.conversion as conversion
@@ -328,9 +327,8 @@ def init_evaluator() -> eval_.Evaluator:
     """
 
     # initialize metrics
-    metrics = [metric.DiceCoefficient()]
-    # todo: add hausdorff distance, 95th percentile (see metric.HausdorffDistance)
-    warnings.warn('Initialized evaluation with the Dice coefficient. Do you know other suitable metrics?')
+    metrics = [metric.DiceCoefficient(),metric.HausdorffDistance(float=95)]
+    # TODO: add hausdorff distance, 95th percentile (see metric.HausdorffDistance)
 
     # define the labels to evaluate
     labels = {1: 'WhiteMatter',

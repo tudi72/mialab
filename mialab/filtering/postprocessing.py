@@ -31,7 +31,17 @@ class ImagePostProcessing(pymia_fltr.Filter):
         """
 
         # todo: replace this filter by a post-processing - or do we need post-processing at all?
-        warnings.warn('No post-processing implemented. Can you think about something?')
+
+        # Example: Apply a binary closing to smooth the segmentation
+        image = sitk.BinaryMorphologicalClosing(image, [2, 2, 2])
+
+        # Remove small connected components
+        # image = sitk.ConnectedComponent(image)
+        # relabeled_image = sitk.RelabelComponent(image, minimumObjectSize=1000)
+        # image_sitk = sitk.BinaryThreshold(relabeled_image, lowerThreshold=1, upperThreshold=1, insideValue=1, outsideValue=0)
+
+        # Example: Apply median filtering for smoothing
+        # image = sitk.Median(image, [1, 1, 1])
 
         return image
 
