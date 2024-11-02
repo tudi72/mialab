@@ -8,7 +8,7 @@ __pycache__/
 # C extensions
 *.so
 # data folder 
-MIALab_2020_Dataset/
+data/
 
 # Distribution / packaging
 .Python
