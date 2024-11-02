@@ -160,7 +160,6 @@ if __name__ == "__main__":
     """The program's entry point."""
 
     script_dir = os.path.dirname(sys.argv[0])
-
     parser = argparse.ArgumentParser(description='Medical image analysis pipeline for brain tissue segmentation')
 
     parser.add_argument(

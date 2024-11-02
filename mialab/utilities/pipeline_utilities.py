@@ -17,6 +17,11 @@ import mialab.filtering.postprocessing as fltr_postp
 import mialab.filtering.preprocessing as fltr_prep
 import mialab.utilities.multi_processor as mproc
 
+import logging
+import traceback
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 atlas_t1 = sitk.Image()
 atlas_t2 = sitk.Image()
 
@@ -30,6 +35,7 @@ def load_atlas_images(directory: str):
 
     global atlas_t1
     global atlas_t2
+    print("[Load_atlas]: ",directory)
     atlas_t1 = sitk.ReadImage(os.path.join(directory, 'mni_icbm152_t1_tal_nlin_sym_09a_mask.nii.gz'))
     atlas_t2 = sitk.ReadImage(os.path.join(directory, 'mni_icbm152_t2_tal_nlin_sym_09a.nii.gz'))
     if not conversion.ImageProperties(atlas_t1) == conversion.ImageProperties(atlas_t2):
@@ -67,8 +73,15 @@ class FeatureExtractor:
         Returns:
             structure.BrainImage: The image with extracted features.
         """
-        # todo: add T2w features
-        warnings.warn('No features from T2-weighted image extracted.')
+        # TODO: add T2w features
+        try:
+            self.intensity_feature,
+            self.gradient_intensity_feature,
+            self.coordinates_feature = self._extract_features(self.img.images[structure.BrainImageTypes.T2w])
+        except Exception as e:
+            print("[pipeline_utilities.execute]: ",e,'\n')
+            traceback.print_exc()
+
 
         if self.coordinates_feature:
             atlas_coordinates = fltr_feat.AtlasCoordinates()
@@ -124,6 +137,32 @@ class FeatureExtractor:
         labels = self._image_as_numpy_array(self.img.images[structure.BrainImageTypes.GroundTruth], mask)
 
         self.img.feature_matrix = (data.astype(np.float32), labels.astype(np.int16))
+
+    def _extract_features(self, img: structure.BrainImage):
+        """Creates a matrix on [x,y,z] axis with value of the coordinates.
+
+        Args:
+            img: The image to extract features from 
+            intensity_feature
+            gradient_intensity_feature
+            coordinates_feature
+
+        """
+        intensity_feature = sitk.GetArrayFromImage(img)
+
+        gradient_filter = sitk.GradientMagnitudeImageFilter()
+        gradient_intensity_feature = gradient_filter.Execute(img)
+
+        size = img.GetSize()
+        x = np.arange(size[0])
+        y = np.arange(size[1])
+        z = np.arange(size[2])
+        xx, yy, zz = np.meshgrid(x, y, z, indexing='ij')
+        coordinates = np.stack((xx, yy, zz), axis=-1)
+        
+        coordinates_feature = sitk.GetImageFromArray(coordinates)
+
+        return intensity_feature,gradient_intensity_feature,coordinates_feature
 
     @staticmethod
     def _image_as_numpy_array(image: sitk.Image, mask: np.ndarray = None):
