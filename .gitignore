@@ -9,6 +9,7 @@ __pycache__/
 *.so
 # data folder 
 data/
+mia-result/
 
 # Distribution / packaging
 .Python
