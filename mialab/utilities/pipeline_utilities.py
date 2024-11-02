@@ -327,7 +327,7 @@ def init_evaluator() -> eval_.Evaluator:
     """
 
     # initialize metrics
-    metrics = [metric.DiceCoefficient(),metric.HausdorffDistance(float=95)]
+    metrics = [metric.DiceCoefficient(),metric.HausdorffDistance(percentile=95)]
     # TODO: add hausdorff distance, 95th percentile (see metric.HausdorffDistance)
 
     # define the labels to evaluate
