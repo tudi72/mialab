@@ -5,8 +5,25 @@ Image pre-processing aims to improve the image quality (image intensities) for s
 import warnings
 
 import pymia.filtering.filter as pymia_fltr
+import matplotlib.pyplot as plt 
 import SimpleITK as sitk
-import numpy as np
+
+from datetime import datetime
+
+def plot_histogram(img_arr, bins=20):
+    plt.hist(img_arr.flatten(), bins=bins, alpha=0.5, label="Image Histogram")
+    plt.xlabel('Intensity')
+    plt.ylabel('Frequency')
+    plt.title('Histogram of Image Intensities')
+
+    # Generate a timestamp for the filename
+    timestamp = datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
+
+    # Create the filename with the timestamp
+    filename = f'mia-result/plots/histogram_plot_{timestamp}.png'
+
+    # Save the plot to a PNG file with timestamp
+    plt.savefig(filename, format='png', dpi=300)
 
 
 # TODO sanity check of each patient image intensity 
@@ -30,8 +47,16 @@ class ImageNormalization(pymia_fltr.Filter):
 
         img_arr = sitk.GetArrayFromImage(image)
 
+
         img_min = img_arr.min()
         img_max = img_arr.max()
+
+        # SANITY CHECK: image intensity evaluation
+        img_mean = img_arr.mean()
+        img_std = img_arr.std()
+
+        print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
+        plot_histogram(img_arr)
 
         if img_max > img_min:
             normalized_arr = (img_arr - img_min) / (img_max - img_min)
