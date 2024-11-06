@@ -8,33 +8,8 @@ import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 import numpy as np
 
-# class created by Tudi for hypothesizing different normalization techniques
-class HistogramEqualization(pymia_fltr.Filter):
-    
-    def __init__(self):
-        """
-        Initializes a new instance of the HistogramNormalization class.
 
-        """
-        super().__init__()
-
-    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
-        pass 
-
-# class created by Tudi for hypothesizing different normalization techniques
-class ZScoreNormalization(pymia_fltr.Filter):
-    """
-    Represents a Z-score normalization filter
-    Data is normalized around the 
-    Z = (X - mu ) / sigma
-    """
-    def __init__(self):
-        super().__init__()
-
-    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
-        pass 
-
-# TODO implement this class 
+# TODO sanity check of each patient image intensity 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
 
@@ -89,7 +64,6 @@ class SkullStrippingParameters(pymia_fltr.FilterParams):
         """
         self.img_mask = img_mask
 
-# TODO implement this class
 class SkullStripping(pymia_fltr.Filter):
     """Represents a skull-stripping filter."""
 
@@ -150,7 +124,6 @@ class ImageRegistrationParameters(pymia_fltr.FilterParams):
         self.transformation = transformation
         self.is_ground_truth = is_ground_truth
 
-# TODO implement this class
 class ImageRegistration(pymia_fltr.Filter):
     """Represents a registration filter."""
 
