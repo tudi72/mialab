@@ -28,6 +28,9 @@ Mean intensity: 25.22, Standard deviation: 60.49
 
 CONCLUSION 2: NORMALIZATION (E.G. standardization) would not work since the patients are already normalized, the sanity check confirms this (mean, std) values.
 
+CONCLUSION 3: NOISE correction is highly unlikely to happen due to the BRAIN CONNECTOME PROJECT acquisition parameters, same device, same pixel resolution (no need for resampling), images are already corrected with Bias Field Correction for magnetic field inhomogeneities. 
+
+Proposal: Increase signal-to-noise ratio, to obtain sharper features and reduce noise in other regions (brain fat).
 
 *1. Collewet G, Strzelecki M, Marriette F. Influence of MRI acquisition protocols and image intensity normalization
 methods on texture classification. Magn Reson Imag. 2004;22(1):81–91.*

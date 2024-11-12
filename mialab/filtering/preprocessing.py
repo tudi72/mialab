@@ -10,6 +10,27 @@ import SimpleITK as sitk
 
 from datetime import datetime
 
+
+def show_image(image, title='Image', cmap='gray'):
+    """
+    Function to display an MRI image using Matplotlib.
+    Args:
+        image (SimpleITK.Image): The image to display.
+        title (str): Title of the plot.
+        cmap (str): Color map to use for the image display.
+    """
+    # Convert the SimpleITK image to a numpy array for visualization
+    image_array = sitk.GetArrayFromImage(image)
+    
+    # Display the image (assumes 3D or 2D image)
+    plt.figure(figsize=(6, 6))
+    plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
+    plt.title(title)
+    plt.axis('off')
+    plt.show()
+
+
+# SANITY CHECK - histogram plot
 def plot_histogram(img_arr, bins=20):
     plt.hist(img_arr.flatten(), bins=bins, alpha=0.5, label="Image Histogram")
     plt.xlabel('Intensity')
@@ -25,8 +46,6 @@ def plot_histogram(img_arr, bins=20):
     # Save the plot to a PNG file with timestamp
     plt.savefig(filename, format='png', dpi=300)
 
-
-# TODO sanity check of each patient image intensity 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
 
@@ -56,6 +75,8 @@ class ImageNormalization(pymia_fltr.Filter):
         img_std = img_arr.std()
 
         print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
+        voxel_size = image.GetSpacing()  # Returns a tuple (x, y, z)
+        print("Voxel size:", voxel_size,'\n')
         plot_histogram(img_arr)
 
         if img_max > img_min:
@@ -67,6 +88,8 @@ class ImageNormalization(pymia_fltr.Filter):
         img_out = sitk.GetImageFromArray(normalized_arr)
         img_out.CopyInformation(image)
 
+        show_image(img_out, title='Image after normalization')
+        
         return img_out
 
     def __str__(self):
@@ -123,6 +146,7 @@ class SkullStripping(pymia_fltr.Filter):
         except Exception as e:
             print("[SkullStripping]: ",e)
 
+        show_image(skull_stripped_image, title='Image after skull stripping')
         return skull_stripped_image
 
     def __str__(self):
@@ -183,6 +207,8 @@ class ImageRegistration(pymia_fltr.Filter):
         # note: if you are interested in registration, and want to test it, have a look at
         # pymia.filtering.registration.MultiModalRegistration. Think about the type of registration, i.e.
         # do you want to register to an atlas or inter-subject? Or just ask us, we can guide you ;-)
+
+        show_image(registered_image, title='Image after registration')
 
         return registered_image
 
