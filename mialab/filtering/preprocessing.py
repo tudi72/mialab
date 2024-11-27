@@ -24,7 +24,7 @@ def show_image(image, title='Image', cmap='gray'):
     
     # Display the image (assumes 3D or 2D image)
     plt.figure(figsize=(6, 6))
-    plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
+    # plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
     plt.title(title)
     plt.axis('off')
     plt.show()
@@ -45,6 +45,148 @@ def plot_histogram(img_arr, bins=20):
 
     # Save the plot to a PNG file with timestamp
     plt.savefig(filename, format='png', dpi=300)
+
+# bilinear interpolation, wiener filter 
+import SimpleITK as sitk
+import numpy as np
+import warnings
+
+class Resampling(pymia_fltr.Filter):
+    """Represents various resampling methods for MRI image preprocessing."""
+
+    def __init__(self):
+        """Initializes a new instance of the Resampling class."""
+        pass
+
+    def nearest_neighbor(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
+        """Performs nearest neighbor resampling.
+
+        Args:
+            image (sitk.Image): The image.
+            new_spacing (tuple): The desired spacing (x, y, z).
+
+        Returns:
+            sitk.Image: The resampled image using nearest neighbor.
+        """
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+        
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetSize(new_size)
+        resampler.SetOutputSpacing(new_spacing)
+        resampler.SetSize(new_size)
+        resampler.SetTransform(sitk.Transform())
+        resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+        resampled_image = resampler.Execute(image)
+        
+        return resampled_image
+
+    def bilinear(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
+        """Performs bilinear resampling.
+
+        Args:
+            image (sitk.Image): The image.
+            new_spacing (tuple): The desired spacing (x, y, z).
+
+        Returns:
+            sitk.Image: The resampled image using bilinear interpolation.
+        """
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetSize(new_size)
+        resampler.SetOutputSpacing(new_spacing)
+        resampler.SetSize(new_size)
+        resampler.SetTransform(sitk.Transform())
+        resampler.SetInterpolator(sitk.sitkLinear)
+        resampled_image = resampler.Execute(image)
+        
+        return resampled_image
+
+    def cubic(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
+        """Performs cubic resampling.
+
+        Args:
+            image (sitk.Image): The image.
+            new_spacing (tuple): The desired spacing (x, y, z).
+
+        Returns:
+            sitk.Image: The resampled image using cubic interpolation.
+        """
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetSize(new_size)
+        resampler.SetOutputSpacing(new_spacing)
+        resampler.SetSize(new_size)
+        resampler.SetTransform(sitk.Transform())
+        resampler.SetInterpolator(sitk.sitkBSpline)
+        resampled_image = resampler.Execute(image)
+
+        return resampled_image
+
+    def spline(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
+        """Performs spline resampling.
+
+        Args:
+            image (sitk.Image): The image.
+            new_spacing (tuple): The desired spacing (x, y, z).
+
+        Returns:
+            sitk.Image: The resampled image using spline interpolation.
+        """
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetSize(new_size)
+        resampler.SetOutputSpacing(new_spacing)
+        resampler.SetSize(new_size)
+        resampler.SetTransform(sitk.Transform())
+        resampler.SetInterpolator(sitk.sitkBSpline)
+        resampled_image = resampler.Execute(image)
+
+        return resampled_image
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
+
+        new_spacing = (0.5, 0.5, 0.5)
+      
+        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+
+        # Calculate the new size based on the desired spacing
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
+        return self.bilinear(image, new_spacing)
+
+    def __str__(self):
+        """Gets a printable string representation of the Resampling class."""
+        return 'Resampling Methods: Nearest Neighbor, Bilinear, Cubic, Spline'
+
 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
@@ -88,7 +230,7 @@ class ImageNormalization(pymia_fltr.Filter):
         img_out = sitk.GetImageFromArray(normalized_arr)
         img_out.CopyInformation(image)
 
-        show_image(img_out, title='Image after normalization')
+        # show_image(img_out, title='Image after normalization')
         
         return img_out
 
@@ -146,7 +288,7 @@ class SkullStripping(pymia_fltr.Filter):
         except Exception as e:
             print("[SkullStripping]: ",e)
 
-        show_image(skull_stripped_image, title='Image after skull stripping')
+        # show_image(skull_stripped_image, title='Image after skull stripping')
         return skull_stripped_image
 
     def __str__(self):
@@ -208,7 +350,7 @@ class ImageRegistration(pymia_fltr.Filter):
         # pymia.filtering.registration.MultiModalRegistration. Think about the type of registration, i.e.
         # do you want to register to an atlas or inter-subject? Or just ask us, we can guide you ;-)
 
-        show_image(registered_image, title='Image after registration')
+        # show_image(registered_image, title='Image after registration')
 
         return registered_image
 
