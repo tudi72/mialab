@@ -51,50 +51,73 @@ import SimpleITK as sitk
 import numpy as np
 import warnings
 
-class Resampling(pymia_fltr.Filter):
+class NNResampling(pymia_fltr.Filter):
     """Represents various resampling methods for MRI image preprocessing."""
 
     def __init__(self):
         """Initializes a new instance of the Resampling class."""
         pass
 
-    def nearest_neighbor(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
-        """Performs nearest neighbor resampling.
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
 
-        Args:
-            image (sitk.Image): The image.
-            new_spacing (tuple): The desired spacing (x, y, z).
+        new_spacing = (0.5, 0.5, 0.5)
 
-        Returns:
-            sitk.Image: The resampled image using nearest neighbor.
-        """
+        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+
+        # Calculate the new size based on the desired spacing
         original_spacing = image.GetSpacing()
         original_size = image.GetSize()
         new_size = tuple(
             int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
             for i in range(3)
         )
+
+        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
         
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+
+        # Compute new size to maintain the same physical dimensions
+        new_size = [
+            int(round(original_size[i] * (original_spacing[i] / new_spacing[i])))
+            for i in range(3)
+        ]
+
+        # Set up the resampler
         resampler = sitk.ResampleImageFilter()
-        resampler.SetSize(new_size)
-        resampler.SetOutputSpacing(new_spacing)
-        resampler.SetSize(new_size)
-        resampler.SetTransform(sitk.Transform())
-        resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+        resampler.SetInterpolator(sitk.sitkNearestNeighbor)  # Nearest neighbor interpolation
+        resampler.SetOutputSpacing(new_spacing)             # Desired spacing
+        resampler.SetSize(new_size)                         # Computed new size
+        resampler.SetOutputDirection(image.GetDirection())  # Copy direction from input
+        resampler.SetOutputOrigin(image.GetOrigin())        # Copy origin from input
+
+        # Perform resampling
         resampled_image = resampler.Execute(image)
-        
         return resampled_image
 
-    def bilinear(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
-        """Performs bilinear resampling.
+class BilinearResampling(pymia_fltr.Filter):
+    """Represents various resampling methods for MRI image preprocessing."""
 
-        Args:
-            image (sitk.Image): The image.
-            new_spacing (tuple): The desired spacing (x, y, z).
+    def __init__(self):
+        """Initializes a new instance of the Resampling class."""
+        pass
 
-        Returns:
-            sitk.Image: The resampled image using bilinear interpolation.
-        """
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
+
+        new_spacing = (0.5, 0.5, 0.5)
+
+        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+
+        # Calculate the new size based on the desired spacing
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
+        
         original_spacing = image.GetSpacing()
         original_size = image.GetSize()
         new_size = tuple(
@@ -112,81 +135,10 @@ class Resampling(pymia_fltr.Filter):
         
         return resampled_image
 
-    def cubic(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
-        """Performs cubic resampling.
-
-        Args:
-            image (sitk.Image): The image.
-            new_spacing (tuple): The desired spacing (x, y, z).
-
-        Returns:
-            sitk.Image: The resampled image using cubic interpolation.
-        """
-        original_spacing = image.GetSpacing()
-        original_size = image.GetSize()
-        new_size = tuple(
-            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
-            for i in range(3)
-        )
-
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetSize(new_size)
-        resampler.SetOutputSpacing(new_spacing)
-        resampler.SetSize(new_size)
-        resampler.SetTransform(sitk.Transform())
-        resampler.SetInterpolator(sitk.sitkBSpline)
-        resampled_image = resampler.Execute(image)
-
-        return resampled_image
-
-    def spline(self, image: sitk.Image, new_spacing: tuple) -> sitk.Image:
-        """Performs spline resampling.
-
-        Args:
-            image (sitk.Image): The image.
-            new_spacing (tuple): The desired spacing (x, y, z).
-
-        Returns:
-            sitk.Image: The resampled image using spline interpolation.
-        """
-        original_spacing = image.GetSpacing()
-        original_size = image.GetSize()
-        new_size = tuple(
-            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
-            for i in range(3)
-        )
-
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetSize(new_size)
-        resampler.SetOutputSpacing(new_spacing)
-        resampler.SetSize(new_size)
-        resampler.SetTransform(sitk.Transform())
-        resampler.SetInterpolator(sitk.sitkBSpline)
-        resampled_image = resampler.Execute(image)
-
-        return resampled_image
-
-    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
-
-        new_spacing = (0.5, 0.5, 0.5)
-      
-        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
-
-        # Calculate the new size based on the desired spacing
-        original_spacing = image.GetSpacing()
-        original_size = image.GetSize()
-        new_size = tuple(
-            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
-            for i in range(3)
-        )
-
-        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
-        return self.bilinear(image, new_spacing)
 
     def __str__(self):
         """Gets a printable string representation of the Resampling class."""
         return 'Resampling Methods: Nearest Neighbor, Bilinear, Cubic, Spline'
-
 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
