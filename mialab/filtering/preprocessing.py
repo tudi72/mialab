@@ -2,14 +2,14 @@
 
 Image pre-processing aims to improve the image quality (image intensities) for subsequent pipeline steps.
 """
-import warnings
 
 import pymia.filtering.filter as pymia_fltr
 import matplotlib.pyplot as plt 
-import SimpleITK as sitk
-
+from scipy.signal import wiener
 from datetime import datetime
-
+import SimpleITK as sitk
+import numpy as np
+import warnings
 
 def show_image(image, title='Image', cmap='gray'):
     """
@@ -29,7 +29,6 @@ def show_image(image, title='Image', cmap='gray'):
     plt.axis('off')
     plt.show()
 
-
 # SANITY CHECK - histogram plot
 def plot_histogram(img_arr, bins=20):
     plt.hist(img_arr.flatten(), bins=bins, alpha=0.5, label="Image Histogram")
@@ -46,10 +45,44 @@ def plot_histogram(img_arr, bins=20):
     # Save the plot to a PNG file with timestamp
     plt.savefig(filename, format='png', dpi=300)
 
-# bilinear interpolation, wiener filter 
-import SimpleITK as sitk
-import numpy as np
-import warnings
+#TODO bilinear interpolation, wiener filter 
+class WienerDenoisingFilter(pymia_fltr.Filter):
+    """Represents a Wiener denoising filter for MRI image preprocessing."""
+    
+    def __init__(self, kernel_size: int = 3):
+        """
+        Initializes a new instance of the WienerDenoisingFilter class.
+        
+        Args:
+            kernel_size (int): Size of the local neighborhood window for the Wiener filter.
+        """
+        self.kernel_size = kernel_size
+    
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        """
+        Executes the Wiener denoising filter on the given image.
+        
+        Args:
+            image (sitk.Image): Input image.
+            params (pymia_fltr.FilterParams): Optional parameters for filtering.
+        
+        Returns:
+            sitk.Image: Denoised image.
+        """
+        print("[WienerDenoising]: Applying Wiener filter with kernel size", self.kernel_size)
+        
+        # Convert SimpleITK image to numpy array
+        image_array = sitk.GetArrayFromImage(image)
+        
+        # Apply Wiener filter
+        denoised_array = wiener(image_array, mysize=self.kernel_size)
+        
+        # Convert denoised numpy array back to SimpleITK image
+        denoised_image = sitk.GetImageFromArray(denoised_array)
+        denoised_image.CopyInformation(image)  # Preserve image metadata
+        
+        return denoised_image
 
 class NNResampling(pymia_fltr.Filter):
     """Represents various resampling methods for MRI image preprocessing."""
@@ -62,7 +95,7 @@ class NNResampling(pymia_fltr.Filter):
 
         new_spacing = (0.5, 0.5, 0.5)
 
-        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+        # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 
         # Calculate the new size based on the desired spacing
         original_spacing = image.GetSpacing()
@@ -72,7 +105,7 @@ class NNResampling(pymia_fltr.Filter):
             for i in range(3)
         )
 
-        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
+        # print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
         
         original_spacing = image.GetSpacing()
         original_size = image.GetSize()
@@ -106,7 +139,7 @@ class BilinearResampling(pymia_fltr.Filter):
 
         new_spacing = (0.5, 0.5, 0.5)
 
-        print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+        # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 
         # Calculate the new size based on the desired spacing
         original_spacing = image.GetSpacing()
@@ -116,7 +149,7 @@ class BilinearResampling(pymia_fltr.Filter):
             for i in range(3)
         )
 
-        print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
+        # print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
         
         original_spacing = image.GetSpacing()
         original_size = image.GetSize()
@@ -168,10 +201,10 @@ class ImageNormalization(pymia_fltr.Filter):
         img_mean = img_arr.mean()
         img_std = img_arr.std()
 
-        print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
+        # print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
         voxel_size = image.GetSpacing()  # Returns a tuple (x, y, z)
-        print("Voxel size:", voxel_size,'\n')
-        plot_histogram(img_arr)
+        # print("Voxel size:", voxel_size,'\n')
+        # plot_histogram(img_arr)
 
         if img_max > img_min:
             normalized_arr = (img_arr - img_min) / (img_max - img_min)

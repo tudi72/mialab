@@ -252,23 +252,27 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     
     # construct pipeline for T1w image pre-processing
     pipeline_t1 = fltr.FilterPipeline()
+
+    if kwargs.get('bilinear_resampling_pre',False):
+        pipeline_t1.add_filter(fltr_prep.BilinearResampling())
+    
     if kwargs.get('registration_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageRegistration())
         pipeline_t1.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation),
                               len(pipeline_t1.filters) - 1)
     
-   
     if kwargs.get('skullstrip_pre', False):
         pipeline_t1.add_filter(fltr_prep.SkullStripping())
         pipeline_t1.set_param(fltr_prep.SkullStrippingParameters(img.images[structure.BrainImageTypes.BrainMask]),
                               len(pipeline_t1.filters) - 1)
-    
    
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
+    
+    if kwargs.get('wiener_denoising', False):
+        pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter())
 
-    if kwargs.get('bilinear_resampling_pre',False):
-        pipeline_t1.add_filter(fltr_prep.BilinearResampling())
+
 
     # TODO ask the professor why the data 
     # #Mask and data not compatible: data size is 208206936, mask size is 26025867.
@@ -279,6 +283,9 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
 
     # construct pipeline for T2w image pre-processing
     pipeline_t2 = fltr.FilterPipeline()
+    if kwargs.get('bilinear_resampling_pre',False):
+        pipeline_t2.add_filter(fltr_prep.BilinearResampling())
+
     if kwargs.get('registration_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageRegistration())
         pipeline_t2.set_param(fltr_prep.ImageRegistrationParameters(atlas_t2, img.transformation),
@@ -289,15 +296,20 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
                               len(pipeline_t2.filters) - 1)
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
+    
+    if kwargs.get('wiener_denoising', False):
+        pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter())
 
-    if kwargs.get('bilinear_resampling_pre',False):
-        pipeline_t2.add_filter(fltr_prep.BilinearResampling())
 
     # execute pipeline on the T2w image
     img.images[structure.BrainImageTypes.T2w] = pipeline_t2.execute(img.images[structure.BrainImageTypes.T2w])
 
     # construct pipeline for ground truth image pre-processing
     pipeline_gt = fltr.FilterPipeline()
+
+    if kwargs.get('nn_resampling_pre',False):
+        pipeline_gt.add_filter(fltr_prep.NNResampling())
+    
     if kwargs.get('registration_pre', False):
         pipeline_gt.add_filter(fltr_prep.ImageRegistration())
         pipeline_gt.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
