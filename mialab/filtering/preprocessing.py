@@ -2,14 +2,14 @@
 
 Image pre-processing aims to improve the image quality (image intensities) for subsequent pipeline steps.
 """
-import warnings
 
 import pymia.filtering.filter as pymia_fltr
 import matplotlib.pyplot as plt 
-import SimpleITK as sitk
-
+from scipy.signal import wiener
 from datetime import datetime
-
+import SimpleITK as sitk
+import numpy as np
+import warnings
 
 def show_image(image, title='Image', cmap='gray'):
     """
@@ -24,11 +24,10 @@ def show_image(image, title='Image', cmap='gray'):
     
     # Display the image (assumes 3D or 2D image)
     plt.figure(figsize=(6, 6))
-    plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
+    # plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
     plt.title(title)
     plt.axis('off')
     plt.show()
-
 
 # SANITY CHECK - histogram plot
 def plot_histogram(img_arr, bins=20):
@@ -45,6 +44,147 @@ def plot_histogram(img_arr, bins=20):
 
     # Save the plot to a PNG file with timestamp
     plt.savefig(filename, format='png', dpi=300)
+
+#TODO bilinear interpolation, wiener filter 
+class WienerDenoisingFilter(pymia_fltr.Filter):
+    """Represents a Wiener denoising filter for MRI image preprocessing."""
+    
+    def __init__(self, kernel_size: int = 3):
+        """
+        Initializes a new instance of the WienerDenoisingFilter class.
+        
+        Args:
+            kernel_size (int): Size of the local neighborhood window for the Wiener filter.
+        """
+        self.kernel_size = kernel_size
+    
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image:
+        """
+        Executes the Wiener denoising filter on the given image.
+        
+        Args:
+            image (sitk.Image): Input image.
+            params (pymia_fltr.FilterParams): Optional parameters for filtering.
+        
+        Returns:
+            sitk.Image: Denoised image.
+        """
+        print("[WienerDenoising]: Applying Wiener filter with kernel size", self.kernel_size)
+        
+        # Convert SimpleITK image to numpy array
+        image_array = sitk.GetArrayFromImage(image)
+        
+        # Apply Wiener filter
+        denoised_array = wiener(image_array, mysize=self.kernel_size)
+        
+        # Convert denoised numpy array back to SimpleITK image
+        denoised_image = sitk.GetImageFromArray(denoised_array)
+        denoised_image.CopyInformation(image)  # Preserve image metadata
+        
+        return denoised_image
+
+class NNResampling(pymia_fltr.Filter):
+    """Represents various resampling methods for MRI image preprocessing."""
+
+    def __init__(self):
+        """Initializes a new instance of the Resampling class."""
+        pass
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
+
+        new_spacing = (0.5, 0.5, 0.5)
+
+        # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+
+
+        if isinstance(image, sitk.Image):
+            # obj is a SimpleITK Image
+            pass
+            # print("Object is of type sitk.Image")
+        elif isinstance(image, list) and isinstance(image[0], sitk.Image):
+            # obj is a list with one element
+            image = image[0]
+            # print("Object is a list with one element, now obj is:", image)
+        else:
+            print("Object is neither sitk.Image nor a list with one element")
+
+
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        # print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
+        
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+
+        # Compute new size to maintain the same physical dimensions
+        new_size = [
+            int(round(original_size[i] * (original_spacing[i] / new_spacing[i])))
+            for i in range(3)
+        ]
+
+        # Set up the resampler
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetInterpolator(sitk.sitkNearestNeighbor)  # Nearest neighbor interpolation
+        resampler.SetOutputSpacing(new_spacing)             # Desired spacing
+        resampler.SetSize(new_size)                         # Computed new size
+        resampler.SetOutputDirection(image.GetDirection())  # Copy direction from input
+        resampler.SetOutputOrigin(image.GetOrigin())        # Copy origin from input
+
+        # Perform resampling
+        resampled_image = resampler.Execute(image)
+        return resampled_image
+
+class BilinearResampling(pymia_fltr.Filter):
+    """Represents various resampling methods for MRI image preprocessing."""
+
+    def __init__(self):
+        """Initializes a new instance of the Resampling class."""
+        pass
+
+    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
+
+        new_spacing = (0.5, 0.5, 0.5)
+
+        # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
+
+        if isinstance(image, sitk.Image):
+            # obj is a SimpleITK Image
+            pass
+            # print("Object is of type sitk.Image")
+        elif isinstance(image, list) and isinstance(image[0], sitk.Image):
+            # obj is a list with one element
+            image = image[0]
+            # print("Object is a list with one element, now obj is:", image)
+        else:
+            print("Object is neither sitk.Image nor a list with one element")
+        
+        original_spacing = image.GetSpacing()
+        original_size = image.GetSize()
+        new_size = tuple(
+            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
+            for i in range(3)
+        )
+
+        resampler = sitk.ResampleImageFilter()
+        resampler.SetSize(new_size)
+        resampler.SetOutputSpacing(new_spacing)
+        resampler.SetSize(new_size)
+        resampler.SetTransform(sitk.Transform())
+        resampler.SetInterpolator(sitk.sitkLinear)
+        resampled_image = resampler.Execute(image)
+        
+        return resampled_image
+
+
+    def __str__(self):
+        """Gets a printable string representation of the Resampling class."""
+        return 'Resampling Methods: Nearest Neighbor, Bilinear, Cubic, Spline'
 
 class ImageNormalization(pymia_fltr.Filter):
     """Represents a normalization filter."""
@@ -74,10 +214,10 @@ class ImageNormalization(pymia_fltr.Filter):
         img_mean = img_arr.mean()
         img_std = img_arr.std()
 
-        print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
+        # print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
         voxel_size = image.GetSpacing()  # Returns a tuple (x, y, z)
-        print("Voxel size:", voxel_size,'\n')
-        plot_histogram(img_arr)
+        # print("Voxel size:", voxel_size,'\n')
+        # plot_histogram(img_arr)
 
         if img_max > img_min:
             normalized_arr = (img_arr - img_min) / (img_max - img_min)
@@ -88,7 +228,7 @@ class ImageNormalization(pymia_fltr.Filter):
         img_out = sitk.GetImageFromArray(normalized_arr)
         img_out.CopyInformation(image)
 
-        show_image(img_out, title='Image after normalization')
+        # show_image(img_out, title='Image after normalization')
         
         return img_out
 
@@ -146,7 +286,7 @@ class SkullStripping(pymia_fltr.Filter):
         except Exception as e:
             print("[SkullStripping]: ",e)
 
-        show_image(skull_stripped_image, title='Image after skull stripping')
+        # show_image(skull_stripped_image, title='Image after skull stripping')
         return skull_stripped_image
 
     def __str__(self):
@@ -198,9 +338,19 @@ class ImageRegistration(pymia_fltr.Filter):
         transform = params.transformation
         is_ground_truth = params.is_ground_truth  # the ground truth will be handled slightly different
 
+        interpolator = sitk.sitkNearestNeighbor if is_ground_truth else sitk.sitkLinear
+
         registered_image = image
         try:
-            registered_image = sitk.Resample(image, atlas, transform, sitk.sitkLinear, 0.0)
+           registered_image = sitk.Resample(
+                image,                   # Input image
+                atlas,                   # Reference atlas for output grid
+                transform,               # Precomputed transformation
+                interpolator,            # Interpolation method
+                0.0,                     # Default pixel value for out-of-bounds areas
+                image.GetPixelID()       # Maintain the pixel type of the input image
+            )
+
         except Exception as e:
             print("[ImageRegistration]: ",e)
 
@@ -208,7 +358,7 @@ class ImageRegistration(pymia_fltr.Filter):
         # pymia.filtering.registration.MultiModalRegistration. Think about the type of registration, i.e.
         # do you want to register to an atlas or inter-subject? Or just ask us, we can guide you ;-)
 
-        show_image(registered_image, title='Image after registration')
+        # show_image(registered_image, title='Image after registration')
 
         return registered_image
 
@@ -220,3 +370,4 @@ class ImageRegistration(pymia_fltr.Filter):
         """
         return 'ImageRegistration:\n' \
             .format(self=self)
+

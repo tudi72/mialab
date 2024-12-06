@@ -119,13 +119,17 @@ class FeatureExtractor:
             # mask_background = self.img.images[structure.BrainImageTypes.BrainMask]
             # and use background_mask=mask_background in get_mask()
 
+            # TODO mismatch mask with pre-processed image
+
             mask = fltr_feat.RandomizedTrainingMaskGenerator.get_mask(
                 self.img.images[structure.BrainImageTypes.GroundTruth],
                 [0, 1, 2, 3, 4, 5],
                 [0.0003, 0.004, 0.003, 0.04, 0.04, 0.02])
 
             # convert the mask to a logical array where value 1 is False and value 0 is True
+            # print("[FEATURE EXTRACTOR]: MASK", mask.GetSpacing())
             mask = sitk.GetArrayFromImage(mask)
+
             mask = np.logical_not(mask)
 
         # generate features
@@ -134,6 +138,8 @@ class FeatureExtractor:
             axis=1)
 
         # generate labels (note that we assume to have a ground truth even for testing)
+        # print("[GROUND TRUTH]: " + sitk.GetImageFromArray(self.img.images[structure.BrainImageTypes.GroundTruth]).GetSpacing())
+        # print("[MASK]: " + mask.GetSpacing())
         labels = self._image_as_numpy_array(self.img.images[structure.BrainImageTypes.GroundTruth], mask)
 
         self.img.feature_matrix = (data.astype(np.float32), labels.astype(np.int16))
@@ -188,6 +194,8 @@ class FeatureExtractor:
             else:
                 # image is a vector image, make a vector mask
                 vector_mask = np.expand_dims(mask, axis=3)  # shape is now (z, x, y, 1)
+                
+
                 vector_mask = np.repeat(vector_mask, number_of_components,
                                         axis=3)  # shape is now (z, x, y, number_of_components)
                 masked_image = np.ma.masked_array(image, mask=vector_mask)
@@ -227,6 +235,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     # construct pipeline for brain mask registration
     # we need to perform this before the T1w and T2w pipeline because the registered mask is used for skull-stripping
     pipeline_brain_mask = fltr.FilterPipeline()
+
     if kwargs.get('registration_pre', False):
         pipeline_brain_mask.add_filter(fltr_prep.ImageRegistration())
         pipeline_brain_mask.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
@@ -234,58 +243,93 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
 
 
     # execute pipeline on the brain mask image
-    img.images[structure.BrainImageTypes.BrainMask] = pipeline_brain_mask.execute(
-        img.images[structure.BrainImageTypes.BrainMask])
+    img.images[structure.BrainImageTypes.BrainMask] = pipeline_brain_mask.execute(img.images[structure.BrainImageTypes.BrainMask])
 
+    
     # construct pipeline for T1w image pre-processing
     pipeline_t1 = fltr.FilterPipeline()
+
+    
     if kwargs.get('registration_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageRegistration())
         pipeline_t1.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation),
                               len(pipeline_t1.filters) - 1)
     
-   
     if kwargs.get('skullstrip_pre', False):
         pipeline_t1.add_filter(fltr_prep.SkullStripping())
         pipeline_t1.set_param(fltr_prep.SkullStrippingParameters(img.images[structure.BrainImageTypes.BrainMask]),
                               len(pipeline_t1.filters) - 1)
-    
-   
+
+    if kwargs.get('wiener_denoising', False):
+        pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter())   
+
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
+    
 
-
+    # TODO ask the professor why the data 
+    # #Mask and data not compatible: data size is 208206936, mask size is 26025867.
+    # i have applied the nn to the mask but it's not recognized
     # execute pipeline on the T1w image
     img.images[structure.BrainImageTypes.T1w] = pipeline_t1.execute(img.images[structure.BrainImageTypes.T1w])
 
 
     # construct pipeline for T2w image pre-processing
     pipeline_t2 = fltr.FilterPipeline()
+
+
     if kwargs.get('registration_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageRegistration())
         pipeline_t2.set_param(fltr_prep.ImageRegistrationParameters(atlas_t2, img.transformation),
                               len(pipeline_t2.filters) - 1)
+
     if kwargs.get('skullstrip_pre', False):
         pipeline_t2.add_filter(fltr_prep.SkullStripping())
         pipeline_t2.set_param(fltr_prep.SkullStrippingParameters(img.images[structure.BrainImageTypes.BrainMask]),
                               len(pipeline_t2.filters) - 1)
+    if kwargs.get('wiener_denoising', False):
+        pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter())
+
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
+    
+
+
 
     # execute pipeline on the T2w image
     img.images[structure.BrainImageTypes.T2w] = pipeline_t2.execute(img.images[structure.BrainImageTypes.T2w])
 
     # construct pipeline for ground truth image pre-processing
     pipeline_gt = fltr.FilterPipeline()
+
+
     if kwargs.get('registration_pre', False):
         pipeline_gt.add_filter(fltr_prep.ImageRegistration())
         pipeline_gt.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                               len(pipeline_gt.filters) - 1)
 
+
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
         img.images[structure.BrainImageTypes.GroundTruth])
 
+    #################################RESAMPLING###################################################
+    pipeline_resampling_nn = fltr.FilterPipeline()
+    pipeline_resampling_bi = fltr.FilterPipeline()
+
+    if kwargs.get('nn_resampling_pre', False):
+        pipeline_resampling_nn.add_filter(fltr_prep.NNResampling())
+
+    if kwargs.get('bilinear_resampling_pre', False):
+        pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling())
+
+    img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
+    img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
+    
+    img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
+    img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
+    
+    #############################################################################################
     # update image properties to atlas image properties after registration
     img.image_properties = conversion.ImageProperties(img.images[structure.BrainImageTypes.T1w])
 
