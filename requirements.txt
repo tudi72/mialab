@@ -1,5 +1,5 @@
 pathos~=0.2.9
-pymia~=0.3.3
+pymia~=0.3.4
 matplotlib~=3.9.2
 numpy~=2.1.2
 Pillow~=11.0.0
