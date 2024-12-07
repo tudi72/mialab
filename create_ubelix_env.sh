@@ -12,3 +12,7 @@ conda activate mialab
 
 # Install the MIALab dependencies
 pip install -r requirements.txt
+
+pip show numpy 
+
+pip show pymia
