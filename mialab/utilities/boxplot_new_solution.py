@@ -112,8 +112,8 @@ def main():
 
     # alternative: instead of manually loading/reading the csv file you could also use the pandas package
     # but you will need to install it first ('pip install pandas') and import it to this file ('import pandas as pd')
-    print(os.getcwd())
     BASE_PATH = os.getcwd()
+    
     # Configuration
     metric_to_compute = ('DICE', 'HDRFDST')
     structures_to_compute = ('Thalamus', )
