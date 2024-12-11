@@ -87,13 +87,13 @@ class WienerDenoisingFilter(pymia_fltr.Filter):
 class NNResampling(pymia_fltr.Filter):
     """Represents various resampling methods for MRI image preprocessing."""
 
-    def __init__(self):
+    def __init__(self,new_spacing = (1, 1, 1)):
         """Initializes a new instance of the Resampling class."""
-        pass
+        self.new_spacing = new_spacing
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
 
-        new_spacing = (0.5, 0.5, 0.5)
+        new_spacing = self.new_spacing
 
         # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 
@@ -143,13 +143,13 @@ class NNResampling(pymia_fltr.Filter):
 class BilinearResampling(pymia_fltr.Filter):
     """Represents various resampling methods for MRI image preprocessing."""
 
-    def __init__(self):
+    def __init__(self, new_spacing = (1, 1 , 1)):
         """Initializes a new instance of the Resampling class."""
-        pass
+        self.new_spacing = new_spacing
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
 
-        new_spacing = (0.5, 0.5, 0.5)
+        new_spacing = self.new_spacing
 
         # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 

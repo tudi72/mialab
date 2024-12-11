@@ -314,20 +314,20 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         img.images[structure.BrainImageTypes.GroundTruth])
 
     #################################RESAMPLING###################################################
-    # pipeline_resampling_nn = fltr.FilterPipeline()
-    # pipeline_resampling_bi = fltr.FilterPipeline()
+    pipeline_resampling_nn = fltr.FilterPipeline()
+    pipeline_resampling_bi = fltr.FilterPipeline()
 
-    # if kwargs.get('nn_resampling_pre', False):
-    #     pipeline_resampling_nn.add_filter(fltr_prep.NNResampling())
+    if kwargs.get('nn_resampling_pre', False):
+        pipeline_resampling_nn.add_filter(fltr_prep.NNResampling())
 
-    # if kwargs.get('bilinear_resampling_pre', False):
-    #     pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling())
+    if kwargs.get('bilinear_resampling_pre', False):
+        pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling())
 
-    # img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
-    # img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
+    img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
+    img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
     
-    # img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
-    # img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
+    img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
+    img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
     
     #############################################################################################
     # update image properties to atlas image properties after registration
