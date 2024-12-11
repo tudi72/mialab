@@ -241,6 +241,9 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_brain_mask.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                                       len(pipeline_brain_mask.filters) - 1)
 
+    if kwargs.get('nn_resampling_pre', False):
+        pipeline_brain_mask.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
+
 
     # execute pipeline on the brain mask image
     img.images[structure.BrainImageTypes.BrainMask] = pipeline_brain_mask.execute(img.images[structure.BrainImageTypes.BrainMask])
@@ -265,6 +268,10 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
 
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
+
+    if kwargs.get('bilinear_resampling_pre', False):
+        pipeline_t1.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
+
     
 
     # TODO ask the professor why the data 
@@ -290,10 +297,13 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
    
     # if kwargs.get('wiener_denoising', False):
     #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
+    
 
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
     
+    if kwargs.get('bilinear_resampling_pre', False):
+        pipeline_t2.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
 
 
     # execute pipeline on the T2w image
@@ -308,26 +318,28 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_gt.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                               len(pipeline_gt.filters) - 1)
 
+    if kwargs.get('nn_resampling_pre', False):
+        pipeline_gt.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
 
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
         img.images[structure.BrainImageTypes.GroundTruth])
 
     #################################RESAMPLING###################################################
-    pipeline_resampling_nn = fltr.FilterPipeline()
-    pipeline_resampling_bi = fltr.FilterPipeline()
+    # pipeline_resampling_nn = fltr.FilterPipeline()
+    # pipeline_resampling_bi = fltr.FilterPipeline()
 
-    if kwargs.get('nn_resampling_pre', False):
-        pipeline_resampling_nn.add_filter(fltr_prep.NNResampling())
+    # if kwargs.get('nn_resampling_pre', False):
+    #     pipeline_resampling_nn.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
 
-    if kwargs.get('bilinear_resampling_pre', False):
-        pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling())
+    # if kwargs.get('bilinear_resampling_pre', False):
+    #     pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
 
-    img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
-    img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
+    # img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
+    # img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
     
-    img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
-    img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
+    # img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
+    # img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
     
     #############################################################################################
     # update image properties to atlas image properties after registration
