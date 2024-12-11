@@ -77,8 +77,10 @@ def main(csv_file: str, plot_dir: str):
     # load the CSVs. We usually want to compare different methods (e.g. a set of different features), therefore,
     # we load two CSV (for simplicity, it is the same here)
 
+    # TODO: add manually the path to first method (e.g. results from kernel =3 )
     csv_file_method1 = 'mia-result/2024-12-05-11-40-03/results.csv'
-    csv_file_method2 = ''
+    # TODO: add manually the path to second method (e.g. results from kernel =3 )
+    csv_file_method2 = 'mia-result/2024-12-05-11-40-03/results.csv'
     # TODO: adapt to your needs to compare different methods (e.g. load different CSVs)
     df_method1 = pd.read_csv(csv_file_method2, sep=';')
     df_method2 = pd.read_csv(csv_file_method2, sep=';')
