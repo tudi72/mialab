@@ -63,8 +63,7 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
                           'coordinates_feature': True,
                           'intensity_feature': True,
                           'gradient_intensity_feature': True,
-                          'nn_resampling_pre': True,
-                          'bilinear_resampling_pre':True,
+                          'resampling_pre':True,
                           'wiener_denoising_pre':True}
 
     # load images for training and pre-process
@@ -153,10 +152,6 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
     writer.CSVStatisticsWriter(result_summary_file, functions=functions).write(evaluator.results)
     print('\nAggregated statistic results...')
     writer.ConsoleStatisticsWriter(functions=functions).write(evaluator.results)
-
-    ########################################################################################
-    
-    ########################################################################################
 
     # clear results such that the evaluator is ready for the next evaluation
     evaluator.clear()

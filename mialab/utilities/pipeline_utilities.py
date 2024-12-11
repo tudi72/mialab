@@ -227,6 +227,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     transform = sitk.ReadTransform(path_to_transform)
     img = structure.BrainImage(id_, path, img, transform)
 
+    ##################################PIPELINE BRAIN MASK###########################################
     # construct pipeline for brain mask registration
     # we need to perform this before the T1w and T2w pipeline because the registered mask is used for skull-stripping
     pipeline_brain_mask = fltr.FilterPipeline()
@@ -236,13 +237,12 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_brain_mask.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                                       len(pipeline_brain_mask.filters) - 1)
 
-    if kwargs.get('resampling_pre', False):
-        pipeline_brain_mask.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='NN'))
-
 
     # execute pipeline on the brain mask image
     img.images[structure.BrainImageTypes.BrainMask] = pipeline_brain_mask.execute(img.images[structure.BrainImageTypes.BrainMask])
 
+    ################################################################################################
+    ##################################PIPELINE T1###################################################
     
     # construct pipeline for T1w image pre-processing
     pipeline_t1 = fltr.FilterPipeline()
@@ -261,14 +261,16 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     # if kwargs.get('wiener_denoising', False):
     #     pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))   
 
-    if kwargs.get('normalization_pre', False):
-        pipeline_t1.add_filter(fltr_prep.ImageNormalization())
-
     if kwargs.get('resampling_pre', False):
         pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='linear'))
 
+    if kwargs.get('normalization_pre', False):
+        pipeline_t1.add_filter(fltr_prep.ImageNormalization())
+
     img.images[structure.BrainImageTypes.T1w] = pipeline_t1.execute(img.images[structure.BrainImageTypes.T1w])
 
+    ################################################################################################
+    ##################################PIPELINE T2###################################################
 
     # construct pipeline for T2w image pre-processing
     pipeline_t2 = fltr.FilterPipeline()
@@ -286,17 +288,27 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
    
     # if kwargs.get('wiener_denoising', False):
     #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
-
-    if kwargs.get('normalization_pre', False):
-        pipeline_t2.add_filter(fltr_prep.ImageNormalization())
     
     if kwargs.get('resampling_pre', False):
         pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='linear'))
 
+    if kwargs.get('normalization_pre', False):
+        pipeline_t2.add_filter(fltr_prep.ImageNormalization())
 
     # execute pipeline on the T2w image
     img.images[structure.BrainImageTypes.T2w] = pipeline_t2.execute(img.images[structure.BrainImageTypes.T2w])
 
+    ################################################################################################
+    ##################################PIPELINE BRAIN MASK RESAMPLING################################
+    pipeline_resampling = fltr.FilterPipeline()
+
+    if kwargs.get('resampling_pre', False):
+        pipeline_resampling.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='NN'))
+
+    img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling.execute(img.images[structure.BrainImageTypes.BrainMask])
+
+    ################################################################################################
+    ##################################PIPELINE GROUND TRUTH###########################################
     # construct pipeline for ground truth image pre-processing
     pipeline_gt = fltr.FilterPipeline()
 
@@ -312,7 +324,9 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
         img.images[structure.BrainImageTypes.GroundTruth])
-
+    
+    ################################################################################################
+    
     # update image properties to atlas image properties after registration
     img.image_properties = conversion.ImageProperties(img.images[structure.BrainImageTypes.T1w])
 
