@@ -11,6 +11,7 @@ import SimpleITK as sitk
 import numpy as np
 import warnings
 
+
 def show_image(image, title='Image', cmap='gray'):
     """
     Function to display an MRI image using Matplotlib.
@@ -84,12 +85,13 @@ class WienerDenoisingFilter(pymia_fltr.Filter):
         
         return denoised_image
 
-class NNResampling(pymia_fltr.Filter):
+class Resampling(pymia_fltr.Filter):
     """Represents various resampling methods for MRI image preprocessing."""
 
-    def __init__(self,new_spacing = (1, 1, 1)):
+    def __init__(self, new_spacing = (1, 1 , 1),method = 'NN'):
         """Initializes a new instance of the Resampling class."""
         self.new_spacing = new_spacing
+        self.method = method
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
 
@@ -97,86 +99,34 @@ class NNResampling(pymia_fltr.Filter):
 
         # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 
-
-        if isinstance(image, sitk.Image):
-            # obj is a SimpleITK Image
-            pass
-            # print("Object is of type sitk.Image")
-        elif isinstance(image, list) and isinstance(image[0], sitk.Image):
-            # obj is a list with one element
-            image = image[0]
-            # print("Object is a list with one element, now obj is:", image)
-        else:
-            print("Object is neither sitk.Image nor a list with one element")
-
-
         original_spacing = image.GetSpacing()
         original_size = image.GetSize()
-        new_size = tuple(
-            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
-            for i in range(3)
-        )
-
-        # print("[Resampling]: new SIZE",new_size, " <---- old size ", original_size)
         
-        original_spacing = image.GetSpacing()
-        original_size = image.GetSize()
-
-        # Compute new size to maintain the same physical dimensions
         new_size = [
-            int(round(original_size[i] * (original_spacing[i] / new_spacing[i])))
-            for i in range(3)
-        ]
-
-        # Set up the resampler
-        resampler = sitk.ResampleImageFilter()
-        resampler.SetInterpolator(sitk.sitkNearestNeighbor)  # Nearest neighbor interpolation
-        resampler.SetOutputSpacing(new_spacing)             # Desired spacing
-        resampler.SetSize(new_size)                         # Computed new size
-        resampler.SetOutputDirection(image.GetDirection())  # Copy direction from input
-        resampler.SetOutputOrigin(image.GetOrigin())        # Copy origin from input
-
-        # Perform resampling
-        resampled_image = resampler.Execute(image)
-        return resampled_image
-
-class BilinearResampling(pymia_fltr.Filter):
-    """Represents various resampling methods for MRI image preprocessing."""
-
-    def __init__(self, new_spacing = (1, 1 , 1)):
-        """Initializes a new instance of the Resampling class."""
-        self.new_spacing = new_spacing
-
-    def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
-
-        new_spacing = self.new_spacing
-
-        # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
-
-        if isinstance(image, sitk.Image):
-            # obj is a SimpleITK Image
-            pass
-            # print("Object is of type sitk.Image")
-        elif isinstance(image, list) and isinstance(image[0], sitk.Image):
-            # obj is a list with one element
-            image = image[0]
-            # print("Object is a list with one element, now obj is:", image)
-        else:
-            print("Object is neither sitk.Image nor a list with one element")
-        
-        original_spacing = image.GetSpacing()
-        original_size = image.GetSize()
-        new_size = tuple(
-            int(np.round(original_size[i] * original_spacing[i] / new_spacing[i]))
-            for i in range(3)
-        )
+            int(np.round(original_size[0] * (original_spacing[0] / new_spacing[0]))),
+            int(np.round(original_size[1] * (original_spacing[1] / new_spacing[1]))),
+            int(np.round(original_size[2] * (original_spacing[2] / new_spacing[2])))]
+            
 
         resampler = sitk.ResampleImageFilter()
-        resampler.SetSize(new_size)
-        resampler.SetOutputSpacing(new_spacing)
-        resampler.SetSize(new_size)
-        resampler.SetTransform(sitk.Transform())
-        resampler.SetInterpolator(sitk.sitkLinear)
+        resampler.SetOutputDirection(image.GetDirection())      # direction from input
+        resampler.SetOutputOrigin(image.GetOrigin())            # origin from input
+        resampler.SetOutputSpacing(new_spacing)                 # new spacing
+        resampler.SetSize(new_size)                             # new size
+
+        resampler.SetTransform(sitk.Transform())                # transform ?  
+        resampler.SetDefaultPixelValue(image.GetPixelIDValue()) # origin pixel value 
+
+        match self.method: 
+            case 'NN':
+                resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+            case 'linear':
+                resampler.SetInterpolator(sitk.sitkLinear)
+            case 'Bspline':
+                resampler.SetInterpolator(sitk.sitkBSpline)
+            case _: 
+                resampler.SetInterpolator(sitk.sitkNearestNeighbor)
+
         resampled_image = resampler.Execute(image)
         
         return resampled_image

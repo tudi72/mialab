@@ -241,8 +241,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_brain_mask.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                                       len(pipeline_brain_mask.filters) - 1)
 
-    if kwargs.get('nn_resampling_pre', False):
-        pipeline_brain_mask.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
+    if kwargs.get('resampling_pre', False):
+        pipeline_brain_mask.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='NN'))
 
 
     # execute pipeline on the brain mask image
@@ -269,8 +269,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
 
-    if kwargs.get('bilinear_resampling_pre', False):
-        pipeline_t1.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
+    if kwargs.get('resampling_pre', False):
+        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='linear'))
 
     
 
@@ -302,8 +302,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
     
-    if kwargs.get('bilinear_resampling_pre', False):
-        pipeline_t2.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
+    if kwargs.get('resampling_pre', False):
+        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='linear'))
 
 
     # execute pipeline on the T2w image
@@ -318,8 +318,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_gt.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                               len(pipeline_gt.filters) - 1)
 
-    if kwargs.get('nn_resampling_pre', False):
-        pipeline_gt.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
+    if kwargs.get('resampling_pre', False):
+        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='NN'))
 
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
