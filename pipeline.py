@@ -154,6 +154,10 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
     print('\nAggregated statistic results...')
     writer.ConsoleStatisticsWriter(functions=functions).write(evaluator.results)
 
+    ########################################################################################
+    
+    ########################################################################################
+
     # clear results such that the evaluator is ready for the next evaluation
     evaluator.clear()
 
