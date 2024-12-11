@@ -95,7 +95,15 @@ def boxplot_experiment_comparison(data,metric,x_titles,TITLE,output_path):
     ax.spines['bottom'].set_linewidth(2)
     ax.set_title(f"{metric}:{TITLE}",fontdict={'fontweight': 'bold','fontsize': 14})
 
-    ax.set_ylim(0.0, 1.0)
+    min = 0. 
+    max = 1. 
+    data_max = np.max(data)
+    data_min = np.min(data)
+    if max > data_max:
+        max = data_max 
+    if min < data_min : 
+        min = data_min 
+    ax.set_ylim(min, max)
     
     # Display the plot
     plt.tight_layout()
