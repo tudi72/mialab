@@ -8,7 +8,6 @@ __pycache__/
 # C extensions
 *.so
 
-!mia-result/2024-11-02-14-59-14/
 
 # Distribution / packaging
 .Python
