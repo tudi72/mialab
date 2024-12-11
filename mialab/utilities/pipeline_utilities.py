@@ -262,7 +262,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     #     pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))   
 
     if kwargs.get('resampling_pre', False):
-        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='linear'))
+        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='Bspline'))
 
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
@@ -290,7 +290,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
     
     if kwargs.get('resampling_pre', False):
-        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='linear'))
+        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='Bspline'))
 
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
