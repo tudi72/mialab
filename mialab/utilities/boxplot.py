@@ -52,6 +52,8 @@ def boxplot(file_path: str, data: list, title: str, x_label: str, y_label: str, 
         max_ = max_ if max_ is not None and max_ > max_original else max_original
         ax.set_ylim(min_, max_)
 
+    # TODO (from tudi) add the file_path manually 
+    file_path = 'mia-result/plots'
     plt.savefig(file_path)
     plt.close()
 
