@@ -73,7 +73,6 @@ class FeatureExtractor:
         Returns:
             structure.BrainImage: The image with extracted features.
         """
-        # TODO: add T2w features
         try:
             self.intensity_feature,
             self.gradient_intensity_feature,
@@ -119,7 +118,6 @@ class FeatureExtractor:
             # mask_background = self.img.images[structure.BrainImageTypes.BrainMask]
             # and use background_mask=mask_background in get_mask()
 
-            # TODO mismatch mask with pre-processed image
 
             mask = fltr_feat.RandomizedTrainingMaskGenerator.get_mask(
                 self.img.images[structure.BrainImageTypes.GroundTruth],
@@ -127,7 +125,6 @@ class FeatureExtractor:
                 [0.0003, 0.004, 0.003, 0.04, 0.04, 0.02])
 
             # convert the mask to a logical array where value 1 is False and value 0 is True
-            # print("[FEATURE EXTRACTOR]: MASK", mask.GetSpacing())
             mask = sitk.GetArrayFromImage(mask)
 
             mask = np.logical_not(mask)
@@ -138,8 +135,6 @@ class FeatureExtractor:
             axis=1)
 
         # generate labels (note that we assume to have a ground truth even for testing)
-        # print("[GROUND TRUTH]: " + sitk.GetImageFromArray(self.img.images[structure.BrainImageTypes.GroundTruth]).GetSpacing())
-        # print("[MASK]: " + mask.GetSpacing())
         labels = self._image_as_numpy_array(self.img.images[structure.BrainImageTypes.GroundTruth], mask)
 
         self.img.feature_matrix = (data.astype(np.float32), labels.astype(np.int16))
@@ -242,7 +237,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
                                       len(pipeline_brain_mask.filters) - 1)
 
     if kwargs.get('resampling_pre', False):
-        pipeline_brain_mask.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='NN'))
+        pipeline_brain_mask.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='NN'))
 
 
     # execute pipeline on the brain mask image
@@ -270,14 +265,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
 
     if kwargs.get('resampling_pre', False):
-        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='linear'))
+        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='linear'))
 
-    
-
-    # TODO ask the professor why the data 
-    # #Mask and data not compatible: data size is 208206936, mask size is 26025867.
-    # i have applied the nn to the mask but it's not recognized
-    # execute pipeline on the T1w image
     img.images[structure.BrainImageTypes.T1w] = pipeline_t1.execute(img.images[structure.BrainImageTypes.T1w])
 
 
@@ -297,13 +286,12 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
    
     # if kwargs.get('wiener_denoising', False):
     #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
-    
 
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
     
     if kwargs.get('resampling_pre', False):
-        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='linear'))
+        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='linear'))
 
 
     # execute pipeline on the T2w image
@@ -319,29 +307,12 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
                               len(pipeline_gt.filters) - 1)
 
     if kwargs.get('resampling_pre', False):
-        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(1,1,1),method='NN'))
+        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(1.1,1.1,1.1),method='NN'))
 
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
         img.images[structure.BrainImageTypes.GroundTruth])
 
-    #################################RESAMPLING###################################################
-    # pipeline_resampling_nn = fltr.FilterPipeline()
-    # pipeline_resampling_bi = fltr.FilterPipeline()
-
-    # if kwargs.get('nn_resampling_pre', False):
-    #     pipeline_resampling_nn.add_filter(fltr_prep.NNResampling(new_spacing=(1,1,1)))
-
-    # if kwargs.get('bilinear_resampling_pre', False):
-    #     pipeline_resampling_bi.add_filter(fltr_prep.BilinearResampling(new_spacing=(1,1,1)))
-
-    # img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.BrainMask]])
-    # img.images[structure.BrainImageTypes.GroundTruth] = pipeline_resampling_nn.execute([img.images[structure.BrainImageTypes.GroundTruth]])
-    
-    # img.images[structure.BrainImageTypes.T1w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T1w]])
-    # img.images[structure.BrainImageTypes.T2w] = pipeline_resampling_bi.execute([img.images[structure.BrainImageTypes.T2w]])
-    
-    #############################################################################################
     # update image properties to atlas image properties after registration
     img.image_properties = conversion.ImageProperties(img.images[structure.BrainImageTypes.T1w])
 

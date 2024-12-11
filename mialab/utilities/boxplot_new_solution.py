@@ -118,10 +118,11 @@ def main():
     metric_to_compute = ('DICE', 'HDRFDST')
     structures_to_compute = ('Thalamus', )
     # TODO add manually the experiment paths 
-    experiment_paths = (f'{BASE_PATH}/mia-result/2024-12-05-11-40-03', f'{BASE_PATH}/mia-result/2024-12-05-11-40-03')
-    experiment_names = ('First Experiment', 'Second Experiment')
     
-    plot_output_directory = f'{BASE_PATH}/mia-result/plots'
+    experiment_paths = (f'{BASE_PATH}/mia-result/2024-12-11-14-39-52 - (0.9,0.9,0.9)', f'{BASE_PATH}/mia-result/2024-12-11-11-18-41-baseline')
+    experiment_names = ('Resampling with (0.9, 0.9, 0.9)', 'Baseline')
+    
+    plot_output_directory = f'{BASE_PATH}/mia-result/plots/resampling'
     plot_title = ('Comparison of Experiments on Thalamus', )
     plot_ylabels = ('Dice', 'Hausdorff-Distance')
     plot_timestamp = datetime.now().strftime('%Y-%m-%d-%H-%M-%S')
