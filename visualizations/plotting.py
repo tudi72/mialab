@@ -57,7 +57,9 @@ def boxplot_labels(METRICS,LABELS,data,TITLE,output_path):
         ax.spines['bottom'].set_linewidth(2)
         ax.set_title(f"{metric}:{TITLE}",fontdict={'fontweight': 'bold','fontsize': 14})
 
-        ax.set_ylim(0.0, 1.0)
+        # min = np.min(data)
+        # max = np.max(data)
+        ax.set_ylim(bottom=0, top=None)
         
         # Display the plot
         plt.tight_layout()
