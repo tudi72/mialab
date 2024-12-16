@@ -262,7 +262,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     #     pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))   
 
     if kwargs.get('resampling_pre', False):
-        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
+        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1.2,1.2,1.2),method='NN'))
 
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
@@ -290,7 +290,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
     
     if kwargs.get('resampling_pre', False):
-        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
+        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1.2,1.2,1.2),method='NN'))
 
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
@@ -303,7 +303,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     pipeline_resampling = fltr.FilterPipeline()
 
     if kwargs.get('resampling_pre', False):
-        pipeline_resampling.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
+        pipeline_resampling.add_filter(fltr_prep.Resampling(new_spacing=(1.2,1.2,1.2),method='NN'))
 
     img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling.execute(img.images[structure.BrainImageTypes.BrainMask])
 
@@ -319,7 +319,7 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
                               len(pipeline_gt.filters) - 1)
 
     if kwargs.get('resampling_pre', False):
-        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
+        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(1.2,1.2,1.2),method='NN'))
 
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
