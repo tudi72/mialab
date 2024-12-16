@@ -101,11 +101,11 @@ def boxplot_experiment_comparison(data,metric,x_titles,TITLE,output_path):
     max = 1. 
     data_max = np.max(data)
     data_min = np.min(data)
-    if max > data_max:
+    if max < data_max:
         max = data_max 
-    if min < data_min : 
+    if min > data_min : 
         min = data_min 
-    ax.set_ylim(min, max)
+    ax.set_ylim(bottom=min, top=max)
     
     # Display the plot
     plt.tight_layout()
