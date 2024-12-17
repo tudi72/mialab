@@ -5,8 +5,8 @@ Image post-processing aims to alter images such that they depict a desired repre
 import warnings
 
 import numpy as np
-import pydensecrf.densecrf as crf
-import pydensecrf.utils as crf_util
+# import pydensecrf.densecrf as crf
+# import pydensecrf.utils as crf_util
 import pymia.filtering.filter as pymia_fltr
 import SimpleITK as sitk
 
