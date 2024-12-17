@@ -300,7 +300,11 @@ class SkullStripping(pymia_fltr.Filter):
             if mask.GetSize() != image.GetSize():
                 raise ValueError("The mask and image must have the same dimensions.")
 
-            skull_stripped_image = sitk.Mask(image, mask)
+            # skull_stripped_image = sitk.Mask(image, mask)
+
+            mask_image = sitk.Cast(mask, sitk.sitkUInt8)
+            mask_filter = sitk.MaskImageFilter()
+            skull_stripped_image = mask_filter.Execute(image, mask_image)
 
         except Exception as e:
             print("[SkullStripping]: ",e)
