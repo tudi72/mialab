@@ -31,6 +31,8 @@ LOADING_KEYS = [structure.BrainImageTypes.T1w,
                 structure.BrainImageTypes.BrainMask,
                 structure.BrainImageTypes.RegistrationTransform]  # the list of data we will load
 
+import warnings
+warnings.filterwarnings("ignore", message=".*Support for pixel type 32-bit signed integer.*")
 
 def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_dir: str):
     """Brain tissue segmentation using decision forests.

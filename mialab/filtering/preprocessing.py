@@ -4,33 +4,44 @@ Image pre-processing aims to improve the image quality (image intensities) for s
 """
 
 import pymia.filtering.filter as pymia_fltr
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 from scipy.signal import wiener
+from scipy.ndimage import gaussian_filter
 from datetime import datetime
 import SimpleITK as sitk
 import numpy as np
 import warnings
 
 
-def show_image(image, title='Image', cmap='gray'):
-    """
-    Function to display an MRI image using Matplotlib.
-    Args:
-        image (SimpleITK.Image): The image to display.
-        title (str): Title of the plot.
-        cmap (str): Color map to use for the image display.
-    """
-    # Convert the SimpleITK image to a numpy array for visualization
-    image_array = sitk.GetArrayFromImage(image)
-    
-    # Display the image (assumes 3D or 2D image)
-    plt.figure(figsize=(6, 6))
-    # plt.imshow(image_array[image_array.shape[0] // 2], cmap=cmap)  # Show the middle slice of the 3D image
-    plt.title(title)
-    plt.axis('off')
-    plt.show()
 
-# SANITY CHECK - histogram plot
+def estimate_snr_histogram(noisy_image):
+    # Mask out zero background
+    non_zero_mask = noisy_image > 0
+    non_zero_pixels = noisy_image[non_zero_mask]
+    
+    # Use histogram for non-zero pixels
+    hist, bin_edges = np.histogram(non_zero_pixels, bins=50, range=(1, 255))
+    
+    # Find the lowest non-zero intensity bin (likely noise)
+    noise_bin_index = np.argmin(hist)
+    noise_threshold = bin_edges[noise_bin_index]
+    
+    # Separate signal and noise
+    noise_region = non_zero_pixels[non_zero_pixels <= noise_threshold]
+    signal_region = non_zero_pixels[non_zero_pixels > noise_threshold]
+    
+    # Calculate SNR
+    signal_mean = np.mean(signal_region)
+    noise_std = np.std(noise_region)
+    
+    if noise_std == 0:
+        return float('inf'), hist, bin_edges
+    
+    snr = 20 * np.log10(signal_mean / noise_std)
+    
+    return snr, hist, bin_edges
+
+
 def plot_histogram(img_arr, bins=20):
     plt.hist(img_arr.flatten(), bins=bins, alpha=0.5, label="Image Histogram")
     plt.xlabel('Intensity')
@@ -46,7 +57,6 @@ def plot_histogram(img_arr, bins=20):
     # Save the plot to a PNG file with timestamp
     plt.savefig(filename, format='png', dpi=300)
 
-#TODO bilinear interpolation, wiener filter 
 class WienerDenoisingFilter(pymia_fltr.Filter):
     """Represents a Wiener denoising filter for MRI image preprocessing."""
     
@@ -71,18 +81,49 @@ class WienerDenoisingFilter(pymia_fltr.Filter):
         Returns:
             sitk.Image: Denoised image.
         """
-        print("[WienerDenoising]: Applying Wiener filter with kernel size", self.kernel_size)
+        # print("[WienerDenoising]: Applying Wiener filter with kernel size", self.kernel_size)
         
         # Convert SimpleITK image to numpy array
         image_array = sitk.GetArrayFromImage(image)
-        
+
         # Apply Wiener filter
-        denoised_array = wiener(image_array, mysize=self.kernel_size)
-        
-        # Convert denoised numpy array back to SimpleITK image
+        denoised_array = wiener(image_array,mysize=self.kernel_size,noise=0.1)
+
+
         denoised_image = sitk.GetImageFromArray(denoised_array)
         denoised_image.CopyInformation(image)  # Preserve image metadata
-        
+
+        ############### DENOISING PLOT #######################################################        
+        # f, (plot1, plot2) = plt.subplots(1, 2)
+        # plot1.imshow(image_array[image_array.shape[0] // 2],cmap='gray')
+        # plot1.set_title("Original Image")
+        # plot2.imshow(denoised_array[denoised_array.shape[0] // 2],cmap='gray') 
+        # plot2.set_title("Wiener Denoised Image")
+        # plt.show()
+        ########################################################################################
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(denoised_array[denoised_array.shape[0] // 2],cmap='gray') 
+        # plt.title("Wiener Denoising")
+        # plt.axis('off')  
+        # plt.show()
+        ############### DENOISING HISTOGRAM #####################################################        
+        # noisy_image = denoised_array
+        # snr_value, hist, bin_edges = estimate_snr_histogram(noisy_image[noisy_image.shape[0] // 2])
+        # plt.figure(figsize=(10, 6))
+        # plt.bar(bin_edges[:-1], hist, width=np.diff(bin_edges), edgecolor='black', alpha=0.7)
+        # plt.title(f'Histogram after denoising (SNR: {snr_value:.2f} dB)')
+        # plt.xlabel('Pixel Intensity')
+        # plt.ylabel('Frequency')
+        # noise_bin_index = np.argmin(hist)
+        # plt.axvline(x=bin_edges[noise_bin_index], color='r', linestyle='--', label='Noise Threshold')
+        # plt.legend()
+        # plt.tight_layout()
+        # plt.show()
+        # print(f"Estimated SNR: {snr_value:.2f} dB")
+        ########################################################################################
+
+
+
         return denoised_image
 
 class Resampling(pymia_fltr.Filter):
@@ -95,8 +136,9 @@ class Resampling(pymia_fltr.Filter):
 
     def execute(self, image: sitk.Image, params: pymia_fltr.FilterParams = None) -> sitk.Image: 
 
-        new_spacing = self.new_spacing
-
+        # new_spacing = self.new_spacing
+        new_spacing = (0.6, 0.6, 0.6)
+ 
         # print("[Resampling]: original space ", image.GetSpacing()," ---Upsampling---> ",new_spacing)
 
         original_spacing = image.GetSpacing()
@@ -129,6 +171,28 @@ class Resampling(pymia_fltr.Filter):
 
         resampled_image = resampler.Execute(image)
         
+        ############### DENOISING PLOT #######################################################        
+        # image_array = sitk.GetArrayFromImage(image)
+        # resampled_array = sitk.GetArrayFromImage(resampled_image)
+        # f, (plot1, plot2) = plt.subplots(1, 2)
+        # plot1.imshow(image_array[image_array.shape[0] // 2],cmap='gray')
+        # plot1.set_title("Original Image")
+        # # plot1.set_aspect('auto')
+        # plot2.imshow(resampled_array[resampled_array.shape[0] // 2],cmap='gray') 
+        # # plot2.set_aspect('auto')  # Set aspect ratio to auto to stretch the axes
+        # plot2.set_title("Resampled Image")
+        # plt.show()        
+        ########################################################################################
+        # resampled_array = sitk.GetArrayFromImage(resampled_image)
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(resampled_array[resampled_array.shape[0] // 2],cmap='gray') 
+        # plt.title("Resampling")
+        # plt.axis('off')  
+        # plt.show()
+        ########################################################################################
+
+
+
         return resampled_image
 
 
@@ -167,15 +231,24 @@ class ImageNormalization(pymia_fltr.Filter):
         # print(f"Mean intensity: {img_mean:.2f}, Standard deviation: {img_std:.2f}")
         voxel_size = image.GetSpacing()  # Returns a tuple (x, y, z)
         # print("Voxel size:", voxel_size,'\n')
-        # plot_histogram(img_arr)
 
         if img_max > img_min:
-            normalized_arr = (img_arr - img_min) / (img_max - img_min)
+            normalized_array = (img_arr - img_min) / (img_max - img_min)
         else:
-            warnings.warn("Image has no intensity range (max == min). Returning unprocessed image.")
-            normalized_arr = img_arr    
+            warnings.warn(f"Image has no intensity range (max == min). Returning unprocessed image. mean:{img_mean}, std:img_std")
+            normalized_array = img_arr    
 
-        img_out = sitk.GetImageFromArray(normalized_arr)
+
+
+        ##################NORMALIZATION PLOT###################################################
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(normalized_array[normalized_array.shape[0] // 2], cmap='gray')
+        # plt.title("Normalization")
+        # plt.axis('off')  
+        # plt.show()
+        ########################################################################################
+
+        img_out = sitk.GetImageFromArray(normalized_array)
         img_out.CopyInformation(image)
 
         # show_image(img_out, title='Image after normalization')
@@ -221,22 +294,26 @@ class SkullStripping(pymia_fltr.Filter):
         """
         mask = params.img_mask  # the brain mask
 
-        # todo: remove the skull from the image by using the brain mask
 
         skull_stripped_image = image
         try:
             if mask.GetSize() != image.GetSize():
                 raise ValueError("The mask and image must have the same dimensions.")
 
-            image = sitk.Cast(image, sitk.sitkUInt8)
-            mask = sitk.Cast(mask, sitk.sitkUInt8)
-
             skull_stripped_image = sitk.Mask(image, mask)
 
         except Exception as e:
             print("[SkullStripping]: ",e)
 
-        # show_image(skull_stripped_image, title='Image after skull stripping')
+        ##################SKULL STRIPPING PLOT##################################################
+        # skull_stripped_array = sitk.GetArrayFromImage(skull_stripped_image)
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(skull_stripped_array[skull_stripped_array.shape[0] // 2], cmap='gray')
+        # plt.title("Skull Stripping")
+        # plt.axis('off')  
+        # plt.show()
+        ########################################################################################
+
         return skull_stripped_image
 
     def __str__(self):
@@ -309,6 +386,15 @@ class ImageRegistration(pymia_fltr.Filter):
         # do you want to register to an atlas or inter-subject? Or just ask us, we can guide you ;-)
 
         # show_image(registered_image, title='Image after registration')
+
+        ##################REGISTRATION PLOT###################################################
+        # registered_array = sitk.GetArrayFromImage(registered_image)
+        # plt.figure(figsize=(8, 8))
+        # plt.imshow(registered_array[registered_array.shape[0] // 2], cmap='gray')
+        # plt.title("Registration")
+        # plt.axis('off')  
+        # plt.show()
+        ########################################################################################
 
         return registered_image
 

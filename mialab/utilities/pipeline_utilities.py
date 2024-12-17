@@ -228,14 +228,17 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     img = structure.BrainImage(id_, path, img, transform)
 
     ##################################PIPELINE BRAIN MASK###########################################
-    # construct pipeline for brain mask registration
     # we need to perform this before the T1w and T2w pipeline because the registered mask is used for skull-stripping
     pipeline_brain_mask = fltr.FilterPipeline()
+
+    # if kwargs.get('resampling_pre', False):
+    #     pipeline_brain_mask.add_filter(fltr_prep.Resampling(new_spacing=(1.5, 1.5 ,1.5),method='NN'))
 
     if kwargs.get('registration_pre', False):
         pipeline_brain_mask.add_filter(fltr_prep.ImageRegistration())
         pipeline_brain_mask.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                                       len(pipeline_brain_mask.filters) - 1)
+
 
 
     # execute pipeline on the brain mask image
@@ -247,22 +250,21 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     # construct pipeline for T1w image pre-processing
     pipeline_t1 = fltr.FilterPipeline()
 
-    
+    # if kwargs.get('resampling_pre', False):
+    #     pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(1.5, 1.5 ,1.5),method='linear'))
+
     if kwargs.get('registration_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageRegistration())
         pipeline_t1.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation),
                               len(pipeline_t1.filters) - 1)
-    
+
     if kwargs.get('skullstrip_pre', False):
         pipeline_t1.add_filter(fltr_prep.SkullStripping())
         pipeline_t1.set_param(fltr_prep.SkullStrippingParameters(img.images[structure.BrainImageTypes.BrainMask]),
                               len(pipeline_t1.filters) - 1)
 
-    if kwargs.get('wiener_denoising', False):
-        pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=9))   
-
-    if kwargs.get('resampling_pre', False):
-        pipeline_t1.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='linear'))
+    # if kwargs.get('wiener_denoising_pre', False):
+    #     pipeline_t1.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))   
 
     if kwargs.get('normalization_pre', False):
         pipeline_t1.add_filter(fltr_prep.ImageNormalization())
@@ -275,6 +277,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     # construct pipeline for T2w image pre-processing
     pipeline_t2 = fltr.FilterPipeline()
 
+    # if kwargs.get('resampling_pre', False):
+    #     pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(1.5, 1.5 ,1.5),method='linear'))
 
     if kwargs.get('registration_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageRegistration())
@@ -286,11 +290,8 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
         pipeline_t2.set_param(fltr_prep.SkullStrippingParameters(img.images[structure.BrainImageTypes.BrainMask]),
                               len(pipeline_t2.filters) - 1)
    
-    if kwargs.get('wiener_denoising', False):
-        pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=9))
-    
-    if kwargs.get('resampling_pre', False):
-        pipeline_t2.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='linear'))
+    # if kwargs.get('wiener_denoising_pre', False):
+    #     pipeline_t2.add_filter(fltr_prep.WienerDenoisingFilter(kernel_size=3))
 
     if kwargs.get('normalization_pre', False):
         pipeline_t2.add_filter(fltr_prep.ImageNormalization())
@@ -299,27 +300,17 @@ def pre_process(id_: str, paths: dict, **kwargs) -> structure.BrainImage:
     img.images[structure.BrainImageTypes.T2w] = pipeline_t2.execute(img.images[structure.BrainImageTypes.T2w])
 
     ################################################################################################
-    ##################################PIPELINE BRAIN MASK RESAMPLING################################
-    pipeline_resampling = fltr.FilterPipeline()
-
-    if kwargs.get('resampling_pre', False):
-        pipeline_resampling.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
-
-    img.images[structure.BrainImageTypes.BrainMask] = pipeline_resampling.execute(img.images[structure.BrainImageTypes.BrainMask])
-
-    ################################################################################################
     ##################################PIPELINE GROUND TRUTH###########################################
     # construct pipeline for ground truth image pre-processing
     pipeline_gt = fltr.FilterPipeline()
 
+    # if kwargs.get('resampling_pre', False):
+    #     pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(1.5, 1.5 ,1.5),method='NN'))
 
     if kwargs.get('registration_pre', False):
         pipeline_gt.add_filter(fltr_prep.ImageRegistration())
         pipeline_gt.set_param(fltr_prep.ImageRegistrationParameters(atlas_t1, img.transformation, True),
                               len(pipeline_gt.filters) - 1)
-
-    if kwargs.get('resampling_pre', False):
-        pipeline_gt.add_filter(fltr_prep.Resampling(new_spacing=(0.9,0.9,0.9),method='NN'))
 
     # execute pipeline on the ground truth image
     img.images[structure.BrainImageTypes.GroundTruth] = pipeline_gt.execute(
