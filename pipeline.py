@@ -57,14 +57,14 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
                                           LOADING_KEYS,
                                           futil.BrainImageFilePathGenerator(),
                                           futil.DataDirectoryFilter())
-    pre_process_params = {'skullstrip_pre': True,
-                          'normalization_pre': True,
-                          'registration_pre': True,
-                          'coordinates_feature': True,
-                          'intensity_feature': True,
+    pre_process_params = {'skullstrip_pre'            : True,
+                          'normalization_pre'         : True,
+                          'registration_pre'          : True,
+                          'coordinates_feature'       : True,
+                          'intensity_feature'         : True,
                           'gradient_intensity_feature': True,
-                          'resampling_pre':True,
-                          'wiener_denoising_pre':True}
+                          'resampling_pre'            : True,
+                          'wiener_denoising_pre'      : True,}
 
     # load images for training and pre-process
     images = putil.pre_process_batch(crawler.data, pre_process_params, multi_process=False)
@@ -75,9 +75,14 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
 
     # TODO fine-tune random forest
     forest = sk_ensemble.RandomForestClassifier(
-        max_features=images[0].feature_matrix[0].shape[1],
-        n_estimators=30,
-        max_depth=5)
+        max_features     = images[0].feature_matrix[0].shape[1],
+        n_estimators     = 50,
+        max_depth        = 5,
+        criterion        = 'gini',
+        min_samples_leaf = 3, 
+        min_samples_split= 2,
+        bootstrap= True 
+        )
 
     start_time = timeit.default_timer()
     forest.fit(data_train, labels_train)
@@ -126,7 +131,9 @@ def main(result_dir: str, data_atlas_dir: str, data_train_dir: str, data_test_di
         images_probabilities.append(image_probabilities)
 
     # post-process segmentation and evaluate with post-processing
-    post_process_params = {'simple_post': True}
+    post_process_params = {
+                'simple_post': True, 
+                'crf_post'   : False}
     images_post_processed = putil.post_process_batch(images_test, images_prediction, images_probabilities,
                                                      post_process_params, multi_process=True)
 
